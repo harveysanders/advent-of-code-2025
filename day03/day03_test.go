@@ -70,7 +70,7 @@ func TestTotal(t *testing.T) {
 				return f, nil
 			},
 			nDigits:   12,
-			wantTotal: 17095,
+			wantTotal: 168794698570517,
 		},
 	}
 

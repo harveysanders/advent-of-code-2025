@@ -46,17 +46,13 @@ func (b Bank) FindHighestJoltage(n int) int {
 		}
 		var maxPos int
 		var max int
-		// TODO: there are diminishing returns if we go too far to the
-		// right, because there are not enough choices left to iterate through
-		// figure out the pattern
 		for i, v := range restBatts {
-			// Skip the last digit because we need at least 2 batteries
-			if len(joltages) == 0 && i == len(restBatts)-1 {
-				continue
-			}
-			if v > max {
-				max = v
-				maxPos = i
+			// need at least nLeft in the slice we pass to the next recurse call
+			if nLeft <= len(restBatts)-i {
+				if v > max {
+					max = v
+					maxPos = i
+				}
 			}
 		}
 		next := append(joltages, max)
