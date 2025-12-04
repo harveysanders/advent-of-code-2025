@@ -1,12 +1,15 @@
 package day04_test
 
 import (
+	"context"
 	"embed"
 	"io"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/harveysanders/aoc2025/day04"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -161,5 +164,61 @@ x.x.@@@.x.
 		require.NoError(t, err)
 
 		require.Equal(t, tc.wantGrid, diagram)
+	}
+}
+
+func TestRemoveRolls(t *testing.T) {
+	testCases := []struct {
+		desc        string
+		getInput    func() (io.Reader, error)
+		wantRemoved int
+	}{
+		{
+			desc: "example - part 2",
+			getInput: func() (io.Reader, error) {
+				in := strings.NewReader(`
+..@@.@@@@.
+@@@.@.@.@@
+@@@@@.@.@@
+@.@@@@..@.
+@@.@@@@.@@
+.@@@@@@@.@
+.@.@.@.@@@
+@.@@@.@@@@
+.@@@@@@@@.
+@.@.@@@.@.
+`[1:])
+				return in, nil
+			},
+			wantRemoved: 43,
+		},
+		{
+			desc: "real input - part 2",
+			getInput: func() (io.Reader, error) {
+				f, err := inputFS.Open("input/input.txt")
+				if err != nil {
+					return nil, err
+				}
+				return f, nil
+			},
+			wantRemoved: 8557,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, func(t *testing.T) {
+			input, err := tc.getInput()
+			require.NoError(t, err)
+
+			grid, err := day04.ParseGrid(input)
+			require.NoError(t, err)
+
+			ctx, cancel := context.WithTimeout(t.Context(), 10*time.Second)
+			defer cancel()
+
+			gotRolls, err := grid.RemoveRolls(ctx)
+			assert.NoError(t, err)
+			require.Equal(t, tc.wantRemoved, gotRolls)
+		})
 	}
 }

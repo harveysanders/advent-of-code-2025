@@ -2,6 +2,7 @@ package day04
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"strings"
 )
@@ -164,4 +165,48 @@ func (g Grid) AccessMap() (string, error) {
 		}
 	}
 	return diagaram.String(), nil
+}
+
+func (g Grid) RemoveRolls(ctx context.Context) (int, error) {
+	var passes int
+	removedLastPass := -1
+	var totalRemoved int
+
+	for removedLastPass != 0 {
+		if ctx.Err() != nil {
+			return totalRemoved, ctx.Err()
+		}
+
+		removedLastPass = 0
+		for y, row := range g {
+			for x, c := range row {
+				// remove rolls from last pass
+				if c == "x" {
+					g[y][x] = "."
+				}
+				if c != "@" {
+					continue
+				}
+				if g.IsAccessible(Loc{X: x, Y: y}) {
+					// mark for removal
+					g[y][x] = "x"
+					removedLastPass += 1
+					totalRemoved += 1
+					continue
+				}
+			}
+		}
+		passes += 1
+		// fmt.Println(g.String())
+	}
+	return totalRemoved, nil
+}
+
+func (g Grid) String() string {
+	var out strings.Builder
+	for _, row := range g {
+		_, _ = out.WriteString(strings.Join(row, ""))
+		_, _ = out.WriteString("\n")
+	}
+	return out.String()
 }
