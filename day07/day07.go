@@ -2,8 +2,11 @@ package day07
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"strings"
+	"sync"
+	"sync/atomic"
 )
 
 type Diagram struct {
@@ -60,10 +63,10 @@ func splitBeams(curRow string, beamPositions []int) (int, string) {
 // CountBeams simulates tachyon beam propagation through the diagram, spliting the beam
 // whenever it encounters a splitter "^".
 // Returns the total number of splits, the final grid state as a string, and any error.
-func (d Diagram) CountBeams() (int, string, error) {
+func (d Diagram) CountBeams() (int, string) {
 	var nSplits int
 	if len(d.grid) == 0 {
-		return 0, "", nil
+		return 0, ""
 	}
 
 	for y, row := range d.grid {
@@ -77,9 +80,58 @@ func (d Diagram) CountBeams() (int, string, error) {
 		nSplits += splits
 		d.grid[y] = newRow
 	}
-	return nSplits, d.String(), nil
+	return nSplits, d.String()
 }
 
 func (d Diagram) String() string {
 	return strings.Join(d.grid, "\n")
+}
+
+func (d Diagram) CountTimelines() int {
+	var wg sync.WaitGroup
+	var traverse func(d Diagram, beamPosition int, y int, paths *uint64)
+
+	traverse = func(d Diagram, x int, y int, paths *uint64) {
+		if y == len(d.grid) {
+			atomic.AddUint64(paths, 1)
+			if *paths%1_000_000 == 0 {
+				println(*paths)
+			}
+			return
+		}
+		row := d.grid[y]
+		// newRow := make([]byte, len(row))
+		// _ = copy(newRow, row)
+		switch row[x] {
+		case 'S':
+			traverse(d, x, y+1, paths)
+			return
+		case '.', '|':
+			// newRow[x] = '|'
+			// d.grid[y] = string(newRow)
+			traverse(d, x, y+1, paths)
+			return
+		case '^':
+			// iterate 1 pos. left and right of x
+
+			for i := -1; i < 2; i += 2 {
+				nextX := x + i
+				if nextX < 0 || nextX > len(row)-1 {
+					continue
+				}
+
+				// newRow[nextX] = '|'
+				// d.grid[y] = string(newRow)
+				wg.Go(func() { traverse(d, nextX, y+1, paths) })
+			}
+		default:
+			panic("we should have hit a '|' or '.' ")
+		}
+	}
+	start := strings.IndexByte(d.grid[0], 'S')
+	var timeslines uint64
+	traverse(d, start, 0, &timeslines)
+	wg.Wait()
+	fmt.Printf("****** done! ->%d ******* \n", timeslines)
+	return int(timeslines)
 }
